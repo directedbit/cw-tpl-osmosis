@@ -291,6 +291,27 @@ mod tests {
 
         let value: SavingsBalanceResponse = from_binary(&second_res).unwrap();
         assert_eq!(4, value.savings_balance);
+
+        let overdraw_info = mock_info("anyone", &[]);
+        let overdraw_msg = ExecuteMsg::Withdraw { withdraw_amount: 6 };
+        let overdraw_res = execute(deps.as_mut(), mock_env(), overdraw_info, overdraw_msg);
+        match overdraw_res {
+            Err(ContractError::Payment(cw_utils::PaymentError::NoFunds {})) => {}
+            _ => panic!("wrong wrong wrong"),
+        }
+
+        // should balance by amount
+        let overdraw_res = query(
+            deps.as_ref(),
+            mock_env(),
+            QueryMsg::GetSavingsBalance {
+                depositor: Addr::unchecked("anyone"),
+            },
+        )
+        .unwrap();
+
+        let value: SavingsBalanceResponse = from_binary(&overdraw_res).unwrap();
+        assert_eq!(4, value.savings_balance);
     }
 
     #[test]
